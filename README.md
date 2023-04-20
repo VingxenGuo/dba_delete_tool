@@ -1,92 +1,73 @@
-# automation_delete
+### 工具介紹
+    tool內含有3張table及3個store procedure
+        table : `batch_delete`, `delete_process_config`, `routine_delete_table`
+        store procedure : `batch_delete`, `delete_process`
+## table 介紹
+    `batch_delete` : 
+                   (`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+                    `connection_id` int(10) unsigned DEFAULT NULL, # 連線的mysql thread id，必要時可kill此connection。
+                    `exec_table` varchar(64) DEFAULT NULL,         # 執行表。
+                    `where_condition` varchar(256) DEFAULT NULL,   # 輸入的where condition，例：`createtime < 20230101`。
+                    `chunk_number` int(10) unsigned DEFAULT NULL,  # 一次刪除rows數，預設為10000筆。
+                    `delete_rate` float unsigned DEFAULT NULL,     # 該table 單次chunk 刪除速率，單位：rows數/每秒。
+                    `total_affected_rows` int(11) DEFAULT NULL,    # 共刪除rows數。
+                    `total_delete_rate` float DEFAULT NULL,        # 該table 目前刪除的delete rate。
+                    `duration_second` double DEFAULT NULL,         # 持續時間。
+                    `created_at` datetime DEFAULT NULL,            # 該sp被call時間。
+                    `updated_at` datetime DEFAULT NULL,            # 因爲batch delete，此為每匹刪除的結束時間 。
+                    `finished_at` datetime DEFAULT NULL,           # 結束時間。
+                    PRIMARY KEY (`id`))          
 
-automation delete system
+    `delete_process_config` :
+                   (`sn` int(10) unsigned NOT NULL AUTO_INCREMENT,
+                    `config_key` varchar(64) DEFAULT NULL,         # 有`enable`及`emergency_stop`兩種選項。
+                    `config_value` varchar(64) DEFAULT NULL,       # 若config_key為`enable`且config_value設為1則可正常執行，預設為1。若config_key為
+                                                                     `emergency_stop`且config_value設為1則會開啟緊急停止功能，後續delete_routine_table未執行的部分會跳過，預設為0。
+                    `created_at` datetime DEFAULT NULL,            # 建立該row時間。
+                    `updated_at` datetime DEFAULT NULL,            # 更新設置時間。
+                    PRIMARY KEY (`sn`))
 
-## Getting started
+    `routine_delete_table` ：
+                  （`sn` int(10) unsigned NOT NULL AUTO_INCREMENT,   
+                    `exec_database` varchar(64) NOT NULL,            # 資料庫名稱。
+                    `exec_table` varchar(128) NOT NULL,              # 表名稱。
+                    `routine_type` char(1) NOT NULL,                 # 刪除時間格式，如：y, m, d。
+                    `delete_type` varchar(16) NOT NULL,              # 刪除類型，如：delete_record, drop_table, drop_partition。
+                    `time_interval` int(10) unsigned NOT NULL,       # 刪除時間間隔，搭配routine_type使用，如:若routine_type為d，time_interval為90，
+                                                                       表示刪除90天前的資料。
+                    `delete_key` varchar(64) DEFAULT NULL,           # 刪除關鍵，依delete_type有不同填法，delete_record填column name。drop_table填null。
+                                                                       drop_partition填去除末尾的date format後的partition name前綴，如：partition_name為p_20230101，則填入p_。
+                    `is_enabled` int(10) unsigned NOT NULL,          # 是否可執行，填1為可，0為不可。
+                    `lastest_start_at` datetime DEFAULT NULL,        # 該row最新執行開始時間。
+                    `lastest_finish_at` datetime DEFAULT NULL,       # 該row最新結束時間。
+                    `lastest_duration_second` double DEFAULT NULL,   # 該row最新執行耗用時間。
+                    `lastest_exec_cmd` varchar(256) DEFAULT NULL,    # 該row最新執行指令。
+                    `lastest_err_msg` varchar(128) DEFAULT NULL,     # 該row最新錯誤訊息。
+                    `batch_delete_id` int(10) unsigned DEFAULT NULL, # 該row最新刪除id。此id與batch_delete table中id一樣。delete_record才會有值。
+                    `created_at` datetime DEFAULT NULL,              # 該row創建時間。
+                    `updated_at` datetime DEFAULT NULL,              # 該row更新時間。
+                    PRIMARY KEY (`sn`),
+                    KEY `idx-batch_delete_id` (`batch_delete_id`)
+                    
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### store procedure介紹
+	`batch_delete` : 可返回使用delete_record刪除的rows數以及刪除速率。
+	`delete_process` :  
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+### 操作手冊
 
-## Add your files
+將要刪除的table及相關資料填入’routine_delete_table’ 表中。
+‘exec_databases’ : 填資料庫名稱。
+‘exec_table’ : 填表名稱，如為drop_table，則不加用加上後綴的時間格式
+‘routine_type’ : 為刪除的時間間隔。ex: 天(d)、月(m)、年(y)。
+‘delete_type’ : 為刪除標的選擇。ex: delete_record、drop_partition、drop_table。
+‘time_interval’ : 為多少間隔之前，如為一年前則routine_type填y，time_interval填1。
+‘delete_key’ : 若delete type為delete_record則為column_name，若為drop_partition則填入 partition name的前綴， drop_table則為null。
+‘is_enabled’ 可設定是否執行此刪除，若不需刪除可設為0，預設為1執行;
+剩餘欄位無需填寫。
+在每日執行時間前可更改 ‘delete_process_config’ 表中的 ‘config_key’ 欄位內為enable的row中將 ’config_value’ 欄位，填0或off可關閉刪除功能。
+在刪除中如需緊急停止某項刪除操作，可於 ‘delete_process_config’ 表中的 ‘config_key’ 欄位內為 emergency_stop 的row中將 ‘config_value’ 欄位改為1，可緊急取消刪除尚未執行刪除的部分。
+注：此選項將會每日初始化。
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.go2cloudten.com/tools/automation_delete.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.go2cloudten.com/tools/automation_delete/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+delete_record部分可刪除輸入的time_interval與routine_type換算過的時間前的資料；drop_table僅刪除輸入的time_interval與routine_type換算過的時間的table；
+drop_partition僅刪除輸入的time_interval與routine_type換算過的時間的partition；
