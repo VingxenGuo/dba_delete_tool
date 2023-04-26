@@ -38,7 +38,7 @@ CREATE TABLE `batch_delete` (
   `updated_at` datetime DEFAULT NULL,
   `finished_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -47,7 +47,6 @@ CREATE TABLE `batch_delete` (
 
 LOCK TABLES `batch_delete` WRITE;
 /*!40000 ALTER TABLE `batch_delete` DISABLE KEYS */;
-INSERT INTO `batch_delete` VALUES (1,5145,'trend_log._login_per_5min_old','created_at < \'2023-04-17 00:00:00\'',10000,NULL,0,0,0.000007152557373046875,'2023-04-18 10:49:02','2023-04-18 10:49:02','2023-04-18 10:49:02'),(2,5145,'trend_log._login_per_5min_old','created_at < \'2023-04-17 00:00:00\'',10000,NULL,0,0,0.0000069141387939453125,'2023-04-18 11:04:27','2023-04-18 11:04:27','2023-04-18 11:04:27'),(3,5145,'trend_log._login_per_5min_old','created_at < \'2023-04-17 00:00:00\'',10000,NULL,0,0,0.000010967254638671875,'2023-04-18 11:07:12','2023-04-18 11:07:12','2023-04-18 11:07:12'),(4,5150,'trend_log._login_per_5min_old','created_at < \'2023-04-18 00:00:00\'',10000,NULL,0,0,0.0000069141387939453125,'2023-04-19 15:14:33','2023-04-19 15:14:33','2023-04-19 15:14:33'),(5,5150,'trend_log._login_per_5min_old','created_at < \'2023-04-18 00:00:00\'',10000,NULL,0,0,0.000008106231689453125,'2023-04-19 15:17:28','2023-04-19 15:17:28','2023-04-19 15:17:28');
 /*!40000 ALTER TABLE `batch_delete` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -65,7 +64,7 @@ CREATE TABLE `delete_process_config` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`sn`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -74,7 +73,7 @@ CREATE TABLE `delete_process_config` (
 
 LOCK TABLES `delete_process_config` WRITE;
 /*!40000 ALTER TABLE `delete_process_config` DISABLE KEYS */;
-INSERT INTO `delete_process_config` VALUES (1,'enable','1','2023-04-10 10:34:08','2023-04-10 10:35:43'),(2,'emergency_stop','0','2023-04-10 13:16:21','2023-04-19 15:17:28');
+INSERT INTO `delete_process_config` VALUES (1,'enable','1','2023-04-10 10:34:08','2023-04-10 10:35:43'),(2,'emergency_stop','0','2023-04-10 13:16:21','2023-04-26 11:00:01'),(3,'optimize_innodb','month','2023-04-26 10:01:02','2023-04-26 10:59:54');
 /*!40000 ALTER TABLE `delete_process_config` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
@@ -145,7 +144,7 @@ CREATE TABLE `routine_delete_table` (
   `updated_at` datetime DEFAULT NULL,
   PRIMARY KEY (`sn`),
   KEY `idx-batch_delete_id` (`batch_delete_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -154,7 +153,6 @@ CREATE TABLE `routine_delete_table` (
 
 LOCK TABLES `routine_delete_table` WRITE;
 /*!40000 ALTER TABLE `routine_delete_table` DISABLE KEYS */;
-INSERT INTO `routine_delete_table` VALUES (1,'trend_log','_login_per_5min_old','d','delete_record',1,'created_at',1,'2023-04-19 15:17:28','2023-04-19 15:17:28',0.016482114791870117,'DELETE FROM trend_log._login_per_5min_old WHERE created_at < \'2023-04-18 00:00:00\' ( WITH OPTIMIZE TABLE )',NULL,5,'2023-04-10 10:39:36','2023-04-19 15:17:28'),(2,'trend_log','testharlan','m','drop_partition',1,'p_',1,NULL,NULL,NULL,NULL,'skip every month process, because isn\'t first day of month',NULL,'2023-04-12 14:19:28','2023-04-19 15:17:28'),(3,'trend_log','testabc','y','drop_table',1,NULL,1,NULL,NULL,NULL,NULL,'skip every year process, because isn\'t first day of year',NULL,'2023-04-12 14:21:25','2023-04-19 15:17:28');
 /*!40000 ALTER TABLE `routine_delete_table` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
@@ -168,7 +166,7 @@ UNLOCK TABLES;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER tool.routine_delete_table_insert 
 BEFORE INSERT
-ON tool.routine_delete_table FOR EACH ROW 
+ON `routine_delete_table` FOR EACH ROW 
 BEGIN
 	SET NEW.created_at = NOW();
     SET NEW.updated_at = NOW();
@@ -189,7 +187,7 @@ DELIMITER ;
 DELIMITER ;;
 /*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER tool.routine_delete_table_update 
 BEFORE UPDATE
-ON tool.routine_delete_table FOR EACH ROW 
+ON `routine_delete_table` FOR EACH ROW 
 BEGIN
     SET NEW.updated_at = NOW();
 END */;;
@@ -198,6 +196,62 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Table structure for table `routine_delete_table_example`
+--
+
+DROP TABLE IF EXISTS `routine_delete_table_example`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `routine_delete_table_example` (
+  `sn` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `exec_database` varchar(64) NOT NULL,
+  `exec_table` varchar(128) NOT NULL,
+  `routine_type` char(1) NOT NULL COMMENT 'Y: execute at first day of year, M: execute at first day of month, D daily execute',
+  `delete_type` varchar(16) NOT NULL COMMENT 'delete_record, drop_table, drop_partition',
+  `time_interval` int(10) unsigned NOT NULL,
+  `delete_key` varchar(64) DEFAULT NULL COMMENT 'Switch (delete_type) {\n	case ‘delete_record’:\n		#fill the where condition column\n	case ‘drop_table’:\n		#no usage fill null\n	case ‘drop_partition’:\n		#fill the prefix string of partition name\n}',
+  `is_enabled` int(10) unsigned NOT NULL,
+  `lastest_start_at` datetime DEFAULT NULL,
+  `lastest_finish_at` datetime DEFAULT NULL,
+  `lastest_duration_second` double DEFAULT NULL,
+  `lastest_exec_cmd` varchar(256) DEFAULT NULL,
+  `lastest_err_msg` varchar(128) DEFAULT NULL,
+  `batch_delete_id` int(10) unsigned DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`sn`),
+  KEY `idx-batch_delete_id` (`batch_delete_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `routine_delete_table_example`
+--
+
+LOCK TABLES `routine_delete_table_example` WRITE;
+/*!40000 ALTER TABLE `routine_delete_table_example` DISABLE KEYS */;
+INSERT INTO `routine_delete_table_example` VALUES (1,'trend_log','_login_per_5min_old','d','delete_record',1,'created_at',1,'2023-04-19 15:17:28','2023-04-19 15:17:28',0.016482114791870117,'DELETE FROM trend_log._login_per_5min_old WHERE created_at < \'2023-04-18 00:00:00\' ( WITH OPTIMIZE TABLE )',NULL,5,'2023-04-10 10:39:36','2023-04-19 15:17:28'),(2,'trend_log','testharlan','m','drop_partition',1,'p_',1,NULL,NULL,NULL,NULL,'skip every month process, because isn\'t first day of month',NULL,'2023-04-12 14:19:28','2023-04-19 15:17:28'),(3,'trend_log','testabc','y','drop_table',1,NULL,1,NULL,NULL,NULL,NULL,'skip every year process, because isn\'t first day of year',NULL,'2023-04-12 14:21:25','2023-04-19 15:17:28');
+/*!40000 ALTER TABLE `routine_delete_table_example` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Temporary view structure for view `view_delete_record_analysis`
+--
+
+DROP TABLE IF EXISTS `view_delete_record_analysis`;
+/*!50001 DROP VIEW IF EXISTS `view_delete_record_analysis`*/;
+SET @saved_cs_client     = @@character_set_client;
+/*!50503 SET character_set_client = utf8mb4 */;
+/*!50001 CREATE VIEW `view_delete_record_analysis` AS SELECT 
+ 1 AS `exec_table`,
+ 1 AS `lastest_exec_cmd`,
+ 1 AS `total_affected_rows`,
+ 1 AS `total duration`,
+ 1 AS `delete records duration`,
+ 1 AS `optimize table duration = (total - delete records)`*/;
+SET character_set_client = @saved_cs_client;
 
 --
 -- Dumping events for database 'tool'
@@ -310,6 +364,8 @@ FUNC_BODY:BEGIN
     DECLARE batch_delete_id INT;
     DECLARE is_innodb_table INT DEFAULT 0;
     DECLARE has_full_text_idx INT DEFAULT 0;
+    DECLARE optimize_innodb VARCHAR(8);
+    DECLARE optimize_innodb_flag INT DEFAULT 0;
     DECLARE cursor1 CURSOR FOR SELECT `sn`, `exec_database`, `exec_table`, `routine_type`, `delete_type`, `time_interval`, `delete_key` FROM tool.routine_delete_table WHERE `is_enabled` = 1 ORDER BY `delete_type` DESC;
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET cursor_done = 1;
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -324,6 +380,9 @@ FUNC_BODY:BEGIN
 		LEAVE FUNC_BODY;
     END IF;
     
+    # check config optimize innodb flag
+    SELECT config_value INTO optimize_innodb FROM tool.delete_process_config WHERE config_key = 'optimize_innodb';
+    
     # update all lastest_ prefix column for initail purpose
     UPDATE tool.routine_delete_table SET lastest_start_at = null, lastest_finish_at = null, lastest_duration_second = null, lastest_err_msg = null, lastest_exec_cmd = null WHERE 1;
     # update emergency stop flag for initail purpose
@@ -336,6 +395,17 @@ FUNC_BODY:BEGIN
 	IF DAYOFYEAR(NOW()) = 1 THEN
 		SET first_day_of_year = 1;
     END IF; 
+    
+    #decide optimize innodb flag
+    IF first_day_of_month = 1 AND LOWER(optimize_innodb) = 'month' THEN
+		SET optimize_innodb_flag = 1;
+	ELSEIF first_day_of_year = 1 AND LOWER(optimize_innodb) = 'year' THEN
+		SET optimize_innodb_flag = 1;
+	ELSEIF LOWER(optimize_innodb) = 'day' THEN
+		SET optimize_innodb_flag = 1;
+	ELSE 
+		SET optimize_innodb_flag = 0;
+	END IF;
     
     # start delete process
     OPEN cursor1;
@@ -434,15 +504,17 @@ FUNC_BODY:BEGIN
 			CALL tool.batch_delete(r_exec_database, r_exec_table, where_condition, null, batch_delete_id);
             
             # can use online DDL to optimize table?
-            SELECT COUNT(*) INTO is_innodb_table FROM information_schema.TABLES WHERE TABLE_SCHEMA = r_exec_database AND TABLE_NAME = r_exec_table AND ENGINE='InnoDB';
-            IF is_innodb_table = 1 THEN
-				SELECT COUNT(*) INTO has_full_text_idx FROM information_schema.INNODB_SYS_TABLES a JOIN information_schema.INNODB_SYS_INDEXES b ON a.TABLE_ID = b.TABLE_ID WHERE a.NAME=CONCAT(r_exec_database, '/', r_exec_table) AND b.TYPE=32;
-				IF has_full_text_idx != 1 THEN
-					SET lastest_exec_cmd = CONCAT(lastest_exec_cmd, ' ( WITH OPTIMIZE TABLE )');
-					SET @sql_str = CONCAT('OPTIMIZE NO_WRITE_TO_BINLOG TABLE ', r_exec_database, '.', r_exec_table, ';');
-					PREPARE stmt FROM @sql_str;
-					EXECUTE stmt;
-					DEALLOCATE PREPARE stmt;
+            IF optimize_innodb_flag = 1 THEN
+				SELECT COUNT(*) INTO is_innodb_table FROM information_schema.TABLES WHERE TABLE_SCHEMA = r_exec_database AND TABLE_NAME = r_exec_table AND ENGINE='InnoDB';
+				IF is_innodb_table = 1 THEN
+					SELECT COUNT(*) INTO has_full_text_idx FROM information_schema.INNODB_SYS_TABLES a JOIN information_schema.INNODB_SYS_INDEXES b ON a.TABLE_ID = b.TABLE_ID WHERE a.NAME=CONCAT(r_exec_database, '/', r_exec_table) AND b.TYPE=32;
+					IF has_full_text_idx != 1 THEN
+						SET lastest_exec_cmd = CONCAT(lastest_exec_cmd, ' ( WITH OPTIMIZE TABLE )');
+						SET @sql_str = CONCAT('OPTIMIZE NO_WRITE_TO_BINLOG TABLE ', r_exec_database, '.', r_exec_table, ';');
+						PREPARE stmt FROM @sql_str;
+						EXECUTE stmt;
+						DEALLOCATE PREPARE stmt;
+					END IF;
 				END IF;
 			END IF;
 		ELSE
@@ -470,6 +542,24 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
+-- Final view structure for view `view_delete_record_analysis`
+--
+
+/*!50001 DROP VIEW IF EXISTS `view_delete_record_analysis`*/;
+/*!50001 SET @saved_cs_client          = @@character_set_client */;
+/*!50001 SET @saved_cs_results         = @@character_set_results */;
+/*!50001 SET @saved_col_connection     = @@collation_connection */;
+/*!50001 SET character_set_client      = utf8mb4 */;
+/*!50001 SET character_set_results     = utf8mb4 */;
+/*!50001 SET collation_connection      = utf8mb4_general_ci */;
+/*!50001 CREATE ALGORITHM=MERGE */
+/*!50013 DEFINER=`root`@`%` SQL SECURITY DEFINER */
+/*!50001 VIEW `view_delete_record_analysis` AS select `b`.`exec_table` AS `exec_table`,`a`.`lastest_exec_cmd` AS `lastest_exec_cmd`,`b`.`total_affected_rows` AS `total_affected_rows`,`a`.`lastest_duration_second` AS `total duration`,`b`.`duration_second` AS `delete records duration`,(`a`.`lastest_duration_second` - `b`.`duration_second`) AS `optimize table duration = (total - delete records)` from (`routine_delete_table` `a` left join `batch_delete` `b` on((`a`.`batch_delete_id` = `b`.`id`))) where (`a`.`delete_type` = 'delete_record') */;
+/*!50001 SET character_set_client      = @saved_cs_client */;
+/*!50001 SET character_set_results     = @saved_cs_results */;
+/*!50001 SET collation_connection      = @saved_col_connection */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -480,4 +570,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-04-19 15:21:03
+-- Dump completed on 2023-04-26 11:02:43
