@@ -535,6 +535,7 @@ FUNC_BODY:BEGIN
 		UPDATE tool.routine_delete_table SET lastest_start_at = FROM_UNIXTIME(start_time, '%Y-%m-%d %H:%i:%s'), lastest_finish_at = FROM_UNIXTIME(end_time, '%Y-%m-%d %H:%i:%s'), lastest_duration_second = delta_time, lastest_exec_cmd = lastest_exec_cmd, batch_delete_id = batch_delete_id WHERE sn = r_sn;
     
 	END LOOP PROCESS_LOOP;
+    CLOSE cursor1;
     SELECT 'Finish';
 END FUNC_BODY ;;
 DELIMITER ;
