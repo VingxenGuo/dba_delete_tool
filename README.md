@@ -20,11 +20,12 @@
 
     `delete_process_config` :
                    (`sn` int(10) unsigned NOT NULL AUTO_INCREMENT,
-                    `config_key` varchar(64) DEFAULT NULL,         # 有`enable`及`emergency_stop`兩種選項。
+                    `config_key` varchar(64) DEFAULT NULL,         # 有`enable`及`emergency_stop`、`optimize_innodb`三種選項。
                     `config_value` varchar(64) DEFAULT NULL,       # 若 config_key 為`enable`且 config_value 設為1則可正常執行，
                                                                      設為0時不執行 delete_process store precedure。
-                                                                     若 config_ke y為`emergency_stop`且 config_value 設為1則會開啟緊急停止功能，
+                                                                     若 config_key 為`emergency_stop`且 config_value 設為1則會開啟緊急停止功能，
                                                                      後續 delete_routine_table 未執行的部分會跳過，預設為0。
+                                                                     若 config_key 為`optimize_innodb`且 config_value 可設 'year', 'month', 'day' ，設 'year' 會於每年1月1號執行 delete_record type 的表最佳化，'month' 為每月1號，'day'為每日執行。若沒填入此選項，或填錯則不會進行最佳化。
                     `created_at` datetime DEFAULT NULL,            # 建立該 row 時間。
                     `updated_at` datetime DEFAULT NULL,            # 更新設置時間。
                     PRIMARY KEY (`sn`))
@@ -62,7 +63,8 @@
                     
 	`delete_process` :  於每日執行時間前將要刪除的相關資料參照 table 介紹照格式填入’routine_delete_table’ 表中，
                         執行後可於`routine_delete_table`中觀察填入資料刪除狀況，有無成功執行，若無成功執行刪除資料會有錯誤訊息可查看。
-                        delete_record 部分是 call batch_delete 做的，要查看詳細刪除資訊可查看 batch_delete_table。
+                        delete_record type 是 call batch_delete 做的，要查看詳細刪除資訊可查看 batch_delete_table。
+                        delete_record type 執行時，若於 `delete_process_config` table 中的 `config_key` 為 'optimize_innodb' 的 `config_value` 有設置參數(year/month/day) 根據相應參數執行時間執行最佳化，詳細設定可查看 table 介紹中 `delete_process_config` 的部分。
 
                         ！!注意：
                             1. 在每日執行時間前可更改 ‘delete_process_config’ 表中的 ‘config_key’ 欄位內為 enable 的 row 中將 ’config_value’ 欄位，
@@ -72,10 +74,11 @@
                                 ‘config_value’ 欄位改為1，可緊急取消刪除尚未執行刪除的部分。
                                 注：此選項將會每日初始化。不必手動調回。
 
-                            3.  delete_record 部分可刪除輸入的 time_interval 與 routine_type 換算過的時間前的所有資料；
+                            3.  delete_record type 可刪除輸入的 time_interval 與 routine_type 換算過的時間前的所有資料；
                                 drop_table 僅刪除輸入的 time_interval 與 routine_type 換算過的時間的單張 table，如 time_interval = 90, routine_type = 'd'，今日為4月1日僅會刪除90天前1月1號當天的 table；
                                 drop_partition 僅刪除輸入的 time_interval 與 routine_type 換算過的時間的單個 partition，如 time_interval = 3, 
                                 routine_type = 'm'，今日為4月1日僅會刪除3個月前，1月份的 partition；
+                            4. 若 delete_record type 中要最佳化的表有 'full_text' 類別的 index 則不會執行最佳化。執行最佳化可減少物理存儲空間，提高訪問表時的I/O效率。
 
 ### Quick Start
 
